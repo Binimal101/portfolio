@@ -7,6 +7,7 @@
           {
             "type": "command",
             "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/wiki-reconciliation.mjs\"",
+            "commandWindows": "powershell.exe -NoProfile -NonInteractive -Command \"node (Join-Path (git rev-parse --show-toplevel) '.codex/hooks/wiki-reconciliation.mjs')\"",
             "timeout": 5,
             "statusMessage": "Checking context reconciliation"
           }

@@ -41,6 +41,7 @@ jobs:
         run: |
           set -euo pipefail
           hook=.codex/hooks/wiki-reconciliation.mjs
+          node -e 'const c=JSON.parse(require("fs").readFileSync(".codex/hooks.json","utf8")).hooks.Stop[0].hooks[0]; if (typeof c.command !== "string" || typeof c.commandWindows !== "string") process.exit(1)'
           node --check "$hook"
           assert_blocked() {
             result="$(printf '%s' "$1" | node "$hook")"
