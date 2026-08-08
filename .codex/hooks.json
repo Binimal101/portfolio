@@ -1,0 +1,17 @@
+{
+  "description": "Require the service context-reconciliation gate before a task stops.",
+  "hooks": {
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$(git rev-parse --show-toplevel)/.codex/hooks/wiki-reconciliation.mjs\"",
+            "timeout": 5,
+            "statusMessage": "Checking context reconciliation"
+          }
+        ]
+      }
+    ]
+  }
+}

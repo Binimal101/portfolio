@@ -9,6 +9,7 @@
 | Dependencies and commands | [`package.json`](../package.json) |
 | Verification and image build | [`ci.yml`](../.github/workflows/ci.yml) |
 | Production promotion | [`promote.yml`](../.github/workflows/promote.yml) |
+| Task completion rules and hook | [`AGENTS.md`](../AGENTS.md) and [`hooks.json`](../.codex/hooks.json) |
 | Portfolio infrastructure, when parent exists | [`infra/terraform/services/portfolio`](../../../infra/terraform/services/portfolio/) |
 | Shared infrastructure, when parent exists | [`infra/terraform`](../../../infra/terraform/) |
 | Release standard, when parent exists | [`CI_CD.md`](../../../CI_CD.md) |

@@ -52,4 +52,6 @@ Do not create a custom A2A protocol.
 Run applicable package, backend/client, image, browser, activity-provider,
 authorization, and canonical-host checks. Before completion, reconcile this file
 and `wiki/Sources.md`, delete task-created contradictions, validate links, and add
-no inventories or history.
+no inventories or history. End the handoff with a `Context reconciliation:`
+line; the project-local Codex `Stop` hook prompts one reconciliation pass if it
+is missing.
