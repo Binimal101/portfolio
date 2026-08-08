@@ -79,7 +79,7 @@ function getLinks(info: PersonalInformation | undefined): LinkItem[] {
   ];
 }
 
-/* HeaderStatus and related helpers removed: useNowTick, pad2, formatUptime, useNetworkSnapshot, MonoChip. */
+/* Local clock helpers for the header's time-only chip. */
 
 function useNowTick(ms: number) {
   const [now, setNow] = React.useState(() => Date.now());
@@ -299,7 +299,7 @@ export default function Tree() {
               </p>
             </div>
 
-            {/* time-only status chip (uptime & online removed) */}
+            {/* Local time chip. */}
             <div className="mt-3">
               <TimeChip />
             </div>
