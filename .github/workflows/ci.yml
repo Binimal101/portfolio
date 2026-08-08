@@ -36,6 +36,22 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Verify task-end reconciliation hook
+        shell: bash
+        run: |
+          set -euo pipefail
+          hook=.codex/hooks/wiki-reconciliation.mjs
+          node --check "$hook"
+          assert_blocked() {
+            result="$(printf '%s' "$1" | node "$hook")"
+            node -e 'const value=JSON.parse(process.argv[1]); if (value.decision !== "block") process.exit(1)' "$result"
+          }
+          assert_blocked '{"stop_hook_active":false,"last_assistant_message":"Done"}'
+          assert_blocked 'malformed'
+          assert_blocked '{"stop_hook_active":false,"last_assistant_message":"Context reconciliation: too early\nDone"}'
+          test "$(printf '%s' '{"stop_hook_active":false,"last_assistant_message":"Done\nContext reconciliation: checked"}' | node "$hook")" = '{}'
+          test "$(printf '%s' '{"stop_hook_active":true,"last_assistant_message":"Done"}' | node "$hook")" = '{}'
+
       - name: Configure the isolated test database
         shell: bash
         run: |
