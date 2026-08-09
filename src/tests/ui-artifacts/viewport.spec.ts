@@ -150,7 +150,11 @@ test("hero with skills constellation", async ({ page }, testInfo) => {
   await expect(page.getByTestId("hero")).toBeVisible();
   const constellation = page.getByTestId("skills-constellation").filter({ visible: true });
   await expect(constellation).toHaveCount(1, { timeout: 15_000 });
-  await expect(constellation.getByText("Skill map", { exact: true })).toBeVisible();
+  await expect(constellation.locator("canvas")).toBeVisible();
+  await expect(
+    constellation.getByRole("button", { name: "Next skills group" }),
+  ).toBeVisible();
+  await expect(constellation.getByText("Skill map", { exact: true })).toHaveCount(0);
   await settle(page, 2_000);
   await saveViewportScreenshot(page, testInfo, "hero");
 });

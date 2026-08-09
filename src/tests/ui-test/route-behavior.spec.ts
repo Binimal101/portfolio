@@ -11,6 +11,20 @@ test.beforeEach(async ({ page }) => {
 test("home renders the configured public entry point", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("hero")).toBeVisible();
+  const constellation = page.getByTestId("skills-constellation").filter({ visible: true });
+  await expect(constellation).toHaveCount(1, { timeout: 15_000 });
+  await expect(constellation.locator("canvas")).toBeVisible();
+  const nextGroup = constellation.getByRole("button", { name: "Next skills group" });
+  await expect(nextGroup).toBeVisible();
+  await expect(constellation.getByText("Skill map", { exact: true })).toHaveCount(0);
+
+  await nextGroup.click();
+  await expect(constellation).toHaveAttribute("data-active-group", "Frontend");
+  await nextGroup.click();
+  await expect(constellation).toHaveAttribute("data-active-group", "AI Systems");
+  await expect(constellation.getByText("Agents", { exact: true })).toBeVisible({
+    timeout: 3_000,
+  });
 });
 
 test("first-visit intro can complete without waiting for production animation timers", async ({ page }) => {
