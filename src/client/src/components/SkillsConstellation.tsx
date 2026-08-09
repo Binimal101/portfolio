@@ -75,7 +75,11 @@ function ConstellationScene({
   const targetQuaternion = useRef(new THREE.Quaternion());
   const reusableLocalPos = useRef(new THREE.Vector3());
   const reusableCameraDir = useRef(new THREE.Vector3());
+  const reusableCamRight = useRef(new THREE.Vector3());
+  const reusableCamUp = useRef(new THREE.Vector3());
   const [currentTargetIndex, setCurrentTargetIndex] = useState(0);
+  const currentTargetIndexRef = useRef(0);
+  const onPathCompleteRef = useRef(onPathComplete);
   const titleInitial = isMobile
     ? { opacity: 0, scale: 1.15, filter: "blur(8px)", skewX: -18 }
     : { opacity: 0, scale: 1.5, filter: "blur(10px)", skewX: -30 };
@@ -130,7 +134,12 @@ function ConstellationScene({
   const TRAVERSAL_START_DELAY_MS = 1000; // Delay animation tracing loop after box change
 
   useEffect(() => {
+    onPathCompleteRef.current = onPathComplete;
+  }, [onPathComplete]);
+
+  useEffect(() => {
     setCurrentTargetIndex(0); // Reset targeting to head whenever the path chain physically updates!
+    currentTargetIndexRef.current = 0;
 
     // Instantly snap the group rotation to point the new head node exactly where the user/camera is currently looking.
     // This prevents wild initial spinning swings when the dataset physically regenerates underneath.
@@ -142,8 +151,8 @@ function ConstellationScene({
         reusableCameraDir.current.copy(camera.position).normalize();
 
         // Offset the target direction so active box sits diagonally (top-right) from the center category text
-        const camRight = new THREE.Vector3().crossVectors(camera.up, reusableCameraDir.current).normalize();
-        const camUp = new THREE.Vector3().crossVectors(reusableCameraDir.current, camRight).normalize();
+        const camRight = reusableCamRight.current.crossVectors(camera.up, reusableCameraDir.current).normalize();
+        const camUp = reusableCamUp.current.crossVectors(reusableCameraDir.current, camRight).normalize();
         reusableCameraDir.current.addScaledVector(camRight, 0.5).addScaledVector(camUp, 0.4).normalize();
 
         targetQuaternion.current.setFromUnitVectors(reusableLocalPos.current, reusableCameraDir.current);
@@ -171,13 +180,11 @@ function ConstellationScene({
       interval = setInterval(() => {
         if (isInteracting.current) return; // Pause procession if the user is interacting
 
-        setCurrentTargetIndex(i => {
-          if (i + 1 >= path.length) {
-            onPathComplete();
-            return 0;
-          }
-          return i + 1;
-        });
+        const nextIndex = (currentTargetIndexRef.current + 1) % path.length;
+        const didWrap = nextIndex === 0;
+        currentTargetIndexRef.current = nextIndex;
+        setCurrentTargetIndex(nextIndex);
+        if (didWrap) onPathCompleteRef.current();
       }, timePerElementMs + PAUSE_AFTER_ROTATION_MS);
     }, TRAVERSAL_START_DELAY_MS);
 
@@ -185,7 +192,7 @@ function ConstellationScene({
       clearTimeout(startTimeout);
       if (interval) clearInterval(interval);
     };
-  }, [path, onPathComplete]); // Key change: trace physical path recalculation!
+  }, [path]); // Key change: trace physical path recalculation!
 
   // Interpolate camera rotation to trace the MST chain
   useFrame((state, delta) => {
@@ -215,8 +222,8 @@ function ConstellationScene({
     reusableCameraDir.current.copy(state.camera.position).normalize();
 
     // Offset the target direction so active box sits diagonally (top-right) from the center category text
-    const camRight = new THREE.Vector3().crossVectors(state.camera.up, reusableCameraDir.current).normalize();
-    const camUp = new THREE.Vector3().crossVectors(reusableCameraDir.current, camRight).normalize();
+    const camRight = reusableCamRight.current.crossVectors(state.camera.up, reusableCameraDir.current).normalize();
+    const camUp = reusableCamUp.current.crossVectors(reusableCameraDir.current, camRight).normalize();
     reusableCameraDir.current.addScaledVector(camRight, 0.5).addScaledVector(camUp, 0.4).normalize();
 
     // Calculate rotation via unit vectors
@@ -320,6 +327,7 @@ export function SkillsConstellation() {
   const isMobile = useIsMobile();
   const [activeTextIndex, setActiveTextIndex] = useState(0);
   const [activeDataIndex, setActiveDataIndex] = useState(0);
+  const groupSwapTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const constellationRadius = isMobile ? 11 : 8.5;
   const cameraFov = isMobile ? 50 : 60;
   const cameraPosition: [number, number, number] = isMobile ? [0, 0, 26] : [0, 0, 22];
@@ -418,23 +426,33 @@ export function SkillsConstellation() {
     return result.sort((a, b) => b.nodes.length - a.nodes.length);
   }, [data, constellationRadius]);
 
+  useEffect(() => () => {
+    if (groupSwapTimeoutRef.current) clearTimeout(groupSwapTimeoutRef.current);
+  }, []);
+
   if (isLoading || !data || data.length === 0 || groups.length === 0) return null;
 
   const currentTextGroup = groups[activeTextIndex];
   const currentDataGroup = groups[activeDataIndex];
 
+  const scheduleDataGroup = (next: number) => {
+    if (groupSwapTimeoutRef.current) clearTimeout(groupSwapTimeoutRef.current);
+    groupSwapTimeoutRef.current = setTimeout(() => {
+      setActiveDataIndex(next);
+      groupSwapTimeoutRef.current = null;
+    }, 1200);
+  };
+
   const handlePathComplete = () => {
-    setActiveTextIndex((prev) => {
-      const next = prev < groups.length - 1 ? prev + 1 : 0;
-      setTimeout(() => setActiveDataIndex(next), 1200); // Wait earlier before flipping data (after bulk of glitch anim)
-      return next;
-    });
+    const next = activeTextIndex < groups.length - 1 ? activeTextIndex + 1 : 0;
+    setActiveTextIndex(next);
+    scheduleDataGroup(next); // Wait before flipping data until the title glitch animation is mostly complete.
   };
 
   const handleNavClick = (index: number) => {
     if (activeTextIndex === index) return;
     setActiveTextIndex(index);
-    setTimeout(() => setActiveDataIndex(index), 1200); // 1.2s glitch overlap wait to avoid GPU choke
+    scheduleDataGroup(index); // 1.2s glitch overlap wait to avoid GPU choke
   };
 
   const handleStep = (direction: 1 | -1) => {
