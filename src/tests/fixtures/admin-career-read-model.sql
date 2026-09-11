@@ -5,6 +5,7 @@ CREATE TABLE projects (
   category TEXT NOT NULL,
   description TEXT NOT NULL,
   long_description TEXT,
+  epilogue TEXT,
   tech TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(tech)),
   image TEXT,
   hover_image TEXT,
@@ -59,6 +60,7 @@ CREATE TABLE experiences (
   location TEXT NOT NULL DEFAULT 'Remote',
   duration TEXT NOT NULL,
   description TEXT NOT NULL,
+  epilogue TEXT,
   technologies TEXT NOT NULL DEFAULT '[]' CHECK (json_valid(technologies)),
   is_active INTEGER NOT NULL DEFAULT 0 CHECK (is_active IN (0, 1)),
   position INTEGER NOT NULL DEFAULT 0,
@@ -154,12 +156,12 @@ CREATE TABLE welcome_messages (
 );
 
 CREATE VIEW resume_projects AS
-SELECT id, title, description, tech, position, long_description,
+SELECT id, title, description, tech, position, long_description, epilogue,
        deployed_url, github_url, created_at
 FROM projects WHERE deleted_at IS NULL;
 
 CREATE VIEW resume_experiences AS
-SELECT id, role, company, location, duration, description, technologies,
+SELECT id, role, company, location, duration, description, epilogue, technologies,
        is_active, position, created_at, updated_at FROM experiences;
 
 CREATE VIEW resume_experience_bullets AS

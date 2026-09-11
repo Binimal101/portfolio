@@ -9,7 +9,7 @@ import {
   PORTFOLIO_RUNTIME_DATABASE_OBJECTS,
 } from "../../backend/data/runtime-database-boundary";
 import { createPortfolioClient } from "../../shared/turso-connection";
-import { githubTimelineEvents, projects } from "../../shared/schema";
+import { experiences, githubTimelineEvents, projects } from "../../shared/schema";
 
 const folder = mkdtempSync(path.join(tmpdir(), "portfolio-turso-"));
 const databaseUrl = `file:${path.join(folder, "career.db").replace(/\\/gu, "/")}`;
@@ -72,14 +72,22 @@ test("canonical career tables and Resume compatibility views exist", async () =>
 test("Portfolio reads career rows and can append GitHub activity", async () => {
   const seed = createPortfolioClient({ url: databaseUrl });
   await seed.execute({
-    sql: "INSERT INTO projects (id, title, category, description) VALUES (?, ?, ?, ?)",
-    args: ["project-1", "Project", "Build", "Description"],
+    sql: "INSERT INTO projects (id, title, category, description, epilogue) VALUES (?, ?, ?, ?, ?)",
+    args: ["project-1", "Project", "Build", "Description", "Private project context"],
+  });
+  await seed.execute({
+    sql: "INSERT INTO experiences (id, role, company, duration, description, epilogue) VALUES (?, ?, ?, ?, ?, ?)",
+    args: ["experience-1", "Engineer", "Company", "2024", "Public work", "Private experience context"],
   });
   seed.close();
 
   const { db } = await import("../../backend/data/db");
   const rows = await db.select().from(projects).where(eq(projects.id, "project-1"));
   assert.equal(rows[0]?.title, "Project");
+  assert.equal("epilogue" in (rows[0] ?? {}), false);
+  const experienceRows = await db.select().from(experiences)
+    .where(eq(experiences.id, "experience-1"));
+  assert.equal("epilogue" in (experienceRows[0] ?? {}), false);
 
   await db.insert(githubTimelineEvents).values({
     extId: "event-1",
